@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using AttendanceRegistration.Models;
-using HsDbFirstRealAspNetProject;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +20,13 @@ namespace AttendanceRegistration.Controllers
             conn = new SqlConnection(@"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=AttendanceRegistration;Integrated Security=True");
         }
         // GET: Attendance
-        public IActionResult Index()
+        public IActionResult Index(string SearchString, int? pageIndex)
         {
+            ViewData["CurrentSearch"] = string.IsNullOrWhiteSpace(SearchString) ? SearchString : "";
+
             List<Attendance> attendances = new List<Attendance>();
+            List<Attendance> currentAttendance = new List<Attendance>();
+
             try
             {
                 conn.Open();
@@ -35,8 +38,21 @@ namespace AttendanceRegistration.Controllers
                     adapter.Fill(ds);
                     foreach (DataRow dr in ds.Tables[0].Rows)
                     {
-                        attendances.Add(new Attendance() { Hours = (int)dr["hours"] });
+                        Users user = new Users() { Fullname = (string)dr["Fullname"] };
+                        Dates date = new Dates() { ShcoolDate = (DateTime)dr["shcoolData"] };
+                        attendances.Add(new Attendance() { Hours = (int)dr["hours"], UserId = user, DatesId = date});
                     }
+                }
+                if (!string.IsNullOrWhiteSpace(SearchString))
+                {
+                    foreach (Attendance attendance in attendances)
+                    {
+                        if(attendance.UserId.Fullname == SearchString || attendance.UserId.Username == SearchString)
+                        {
+                            currentAttendance.Add(attendance);
+                        }
+                    }
+                    attendances = currentAttendance;
                 }
             }
             catch
@@ -47,7 +63,7 @@ namespace AttendanceRegistration.Controllers
             {
                 conn.Close();
             }
-            return View(PaginatedList<Attendance>.CreateAsync(attendances, 0, 20));
+            return View(PaginatedList<Attendance>.CreateAsync(attendances, pageIndex ?? 1, 20));
         }
 
         // GET: Attendance/Details/5

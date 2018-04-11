@@ -1,0 +1,3 @@
+@using AttendanceRegistration
+@using AttendanceRegistration.Models
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers

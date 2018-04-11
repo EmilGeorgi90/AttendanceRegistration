@@ -1,41 +1,113 @@
-﻿@model IEnumerable<AttendanceRegistration.Models.Attendance>
+﻿@model PaginatedList<AttendanceRegistration.Models.Attendance>
 
 @{
     ViewData["Title"] = "Index";
 }
 
 <h2>Index</h2>
-
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+<form asp-action="Index" method="get">
+    <p>
+        Find pr. navn <input type="text" name="SearchString" value="@ViewData["CurrentSearch"]" />
+    </p>
+    <input type="submit" value="search" class="btn btn-default" />
+    <a asp-action="Index">back to full list</a>
+</form>
 <table class="table">
     <thead>
         <tr>
-                <th>
-                    @Html.DisplayNameFor(model => model.AttendanceId)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.Hours)
-                </th>
-            <th></th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().UserId.Fullname)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().Hours)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().DatesId.ShcoolDate)
+            </th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.AttendanceId)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Hours)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.UserId.Fullname)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Hours)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.DatesId.ShcoolDate)
+                </td>
+                <td>
+                    @Html.ActionLink("Edit", "Edit", item)
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+<div>
+    @{ if (ViewData["CurrentSearch"] != null)
+        {
+            <div id="chart-demo">
+                @(Html.DevExtreme().PieChart()
+                                                        .ID("pie-chart")
+                                                        .Palette(VizPalette.Bright)
+                                                        .Title("Olympic Medals in 2008")
+                                                        .Margin(m => m.Bottom(20))
+                                                        .Legend(l => l.Visible(false))
+                                                        .Animation(a => a.Enabled(false))
+                                                        .ResolveLabelOverlapping(PieChartResolveLabelOverlapping.Shift)
+                                                        .Export(e => e.Enabled(true))
+                                                        .Series(s => s
+                                                            .Add()
+                                                            .ArgumentField("Elev")
+                                                            .ValueField("Hours")
+                                                            .Label(l => l
+                                                                .Visible(true)
+                                                                .CustomizeText(@<text>
+                                                                    function(arg) {
+                                                                    return arg.argumentText + " ( " + arg.percentText + ")";
+                                                                    }
+                                                                </text>)
+                                                                                                                                                                                                )
+                                                                                                                                                                                            )
+                                                                                                                                                            .DataSource(new List<object> {
+                                                                                                                                        new { Elev = Model.Select(c => c.UserId.Fullname.Where(f => c.UserId.Fullname.Contains(ViewData["CurrentSearch"] as string))), Hours = Model.First().Hours},
+                                                                                                                                        new { Elev = "AllHours", Hours = 6 }
+                                                                                                                                                                                            })
+                )
+
+                <div class="options">
+                    <div class="caption">Options</div>
+                    <div class="option">
+                        <span>Label Overlapping Resolution Mode</span>
+                        @(Html.DevExtreme().SelectBox()
+                                                .DataSource(new[] {
+                                                        PieChartResolveLabelOverlapping.Shift,
+                                                        PieChartResolveLabelOverlapping.Hide,
+                                                        PieChartResolveLabelOverlapping.None
+                                                })
+                                                .Value(PieChartResolveLabelOverlapping.Shift)
+                                                .OnValueChanged(@<text>
+                                                    function (e) {
+                                                    $("#pie-chart").dxPieChart("option", "resolveLabelOverlapping", e.value);
+                                                    }
+                                                </text>)
+                        )
+                    </div>
+                </div>
+            </div>
+        } }
+</div>
+
+@{
+    var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.HasNextPage ? "disabled" : "";
+}
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        <li><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex - 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="btn btn-default @prevDisabled">prev</a></li>
+        <li><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex + 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="btn btn-default @nextDisabled">next</a></li>
+    </ul>
+</nav>
