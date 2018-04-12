@@ -7,7 +7,7 @@ namespace AttendanceRegistration.Models
 {
     public class Notes
     {
-        public Attendance NotesId { get; set; }
+        public int NotesId { get; set; }
         public string Note { get; set; }
     }
 }

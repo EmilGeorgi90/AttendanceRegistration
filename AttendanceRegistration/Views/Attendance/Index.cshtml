@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Index";
 }
-
 <h2>Index</h2>
 <form asp-action="Index" method="get">
     <p>
@@ -24,83 +23,54 @@
             <th>
                 @Html.DisplayNameFor(model => model.First().DatesId.ShcoolDate)
             </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().Notes)
+            </th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
-            <tr>
+            IEnumerable<Attendance>
+    attendances = Model.Where(c => c.UserId.Fullname == item.UserId.Fullname && c.DatesId.ShcoolDate == item.DatesId.ShcoolDate.AddDays(+-7) && c.DatesId.ShcoolDate.DayOfWeek != DayOfWeek.Saturday || c.DatesId.ShcoolDate.DayOfWeek != DayOfWeek.Sunday);
+            int currentVal = 0;
+            foreach (Attendance item2 in attendances)
+            {
+                if (currentVal > 7 * 4)
+                {
+                    break;
+                }
+                currentVal += item2.Hours;
+            }
+            <tr onclick="clickEvent('@item.UserId.Fullname', @currentVal )">
                 <td>
                     @Html.DisplayFor(modelItem => item.UserId.Fullname)
                 </td>
-                <td>
+                <td class="hours" contenteditable="true" data-Id="@item.AttendanceId" data-notes="@item.Notes">
                     @Html.DisplayFor(modelItem => item.Hours)
                 </td>
-                <td>
+                <td contenteditable="true">
                     @Html.DisplayFor(modelItem => item.DatesId.ShcoolDate)
                 </td>
-                <td>
-                    @Html.ActionLink("Edit", "Edit", item)
+                <td contenteditable="true" class="notes" data-Id="@item.AttendanceId" data-hours="@item.Hours">
+                    @Html.DisplayFor(modelItem => item.Notes)
                 </td>
             </tr>
         }
     </tbody>
 </table>
-<div>
-    @{ if (ViewData["CurrentSearch"] != null)
-        {
-            <div id="chart-demo">
-                @(Html.DevExtreme().PieChart()
-                                                        .ID("pie-chart")
-                                                        .Palette(VizPalette.Bright)
-                                                        .Title("Olympic Medals in 2008")
-                                                        .Margin(m => m.Bottom(20))
-                                                        .Legend(l => l.Visible(false))
-                                                        .Animation(a => a.Enabled(false))
-                                                        .ResolveLabelOverlapping(PieChartResolveLabelOverlapping.Shift)
-                                                        .Export(e => e.Enabled(true))
-                                                        .Series(s => s
-                                                            .Add()
-                                                            .ArgumentField("Elev")
-                                                            .ValueField("Hours")
-                                                            .Label(l => l
-                                                                .Visible(true)
-                                                                .CustomizeText(@<text>
-                                                                    function(arg) {
-                                                                    return arg.argumentText + " ( " + arg.percentText + ")";
-                                                                    }
-                                                                </text>)
-                                                                                                                                                                                                )
-                                                                                                                                                                                            )
-                                                                                                                                                            .DataSource(new List<object> {
-                                                                                                                                        new { Elev = Model.Select(c => c.UserId.Fullname.Where(f => c.UserId.Fullname.Contains(ViewData["CurrentSearch"] as string))), Hours = Model.First().Hours},
-                                                                                                                                        new { Elev = "AllHours", Hours = 6 }
-                                                                                                                                                                                            })
-                )
-
-                <div class="options">
-                    <div class="caption">Options</div>
-                    <div class="option">
-                        <span>Label Overlapping Resolution Mode</span>
-                        @(Html.DevExtreme().SelectBox()
-                                                .DataSource(new[] {
-                                                        PieChartResolveLabelOverlapping.Shift,
-                                                        PieChartResolveLabelOverlapping.Hide,
-                                                        PieChartResolveLabelOverlapping.None
-                                                })
-                                                .Value(PieChartResolveLabelOverlapping.Shift)
-                                                .OnValueChanged(@<text>
-                                                    function (e) {
-                                                    $("#pie-chart").dxPieChart("option", "resolveLabelOverlapping", e.value);
-                                                    }
-                                                </text>)
-                        )
-                    </div>
-                </div>
+<div class="demo-container">
+    <div id="chart-demo">
+        <div id="pie"></div>
+        <div class="options">
+            <div class="caption">Options</div>
+            <div class="option">
+                <span>Label Overlapping Resolution Mode</span>
+                <div id="types"></div>
             </div>
-        } }
+        </div>
+    </div>
 </div>
-
 @{
     var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
     var nextDisabled = !Model.HasNextPage ? "disabled" : "";

@@ -22,7 +22,7 @@ namespace AttendanceRegistration.Controllers
         // GET: Attendance
         public IActionResult Index(string SearchString, int? pageIndex)
         {
-            ViewData["CurrentSearch"] = string.IsNullOrWhiteSpace(SearchString) ? SearchString : "";
+            ViewData["CurrentSearch"] = !string.IsNullOrWhiteSpace(SearchString) ? SearchString : "";
 
             List<Attendance> attendances = new List<Attendance>();
             List<Attendance> currentAttendance = new List<Attendance>();
@@ -33,21 +33,21 @@ namespace AttendanceRegistration.Controllers
                 using (SqlCommand command = new SqlCommand() { Connection = conn })
                 using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                 {
-                    command.CommandText = "SELECT * FROM Attendance INNER JOIN Users on Attendance.UserId = Users.UserId INNER JOIN Dates on Attendance.DatesId = Dates.DatesId";
+                    command.CommandText = "SELECT * FROM SelectData";
                     DataSet ds = new DataSet();
                     adapter.Fill(ds);
                     foreach (DataRow dr in ds.Tables[0].Rows)
                     {
-                        Users user = new Users() { Fullname = (string)dr["Fullname"] };
-                        Dates date = new Dates() { ShcoolDate = (DateTime)dr["shcoolData"] };
-                        attendances.Add(new Attendance() { Hours = (int)dr["hours"], UserId = user, DatesId = date});
+                        Users user = new Users() { Username = (string)dr["Username"], Email = (string)dr["Email"], Phonenumber = (string)dr["Phonenumber"], UserId = (int)dr["UserId"], Fullname = (string)dr["Fullname"] };
+                        Dates date = new Dates() { DateId = (int)dr["datesId"], ShcoolDate = (DateTime)dr["shcoolData"] };
+                        attendances.Add(new Attendance() { Notes = (string)dr["note"], AttendanceId = (int)dr["attendanceId"], Hours = (int)dr["hours"], UserId = user, DatesId = date });
                     }
                 }
                 if (!string.IsNullOrWhiteSpace(SearchString))
                 {
                     foreach (Attendance attendance in attendances)
                     {
-                        if(attendance.UserId.Fullname == SearchString || attendance.UserId.Username == SearchString)
+                        if (attendance.UserId.Fullname == SearchString || attendance.UserId.Username == SearchString)
                         {
                             currentAttendance.Add(attendance);
                         }
@@ -81,7 +81,7 @@ namespace AttendanceRegistration.Controllers
         // POST: Attendance/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(IFormCollection collection)
+        public IActionResult Create(string notes, int attendanceId)
         {
             try
             {
@@ -91,12 +91,8 @@ namespace AttendanceRegistration.Controllers
                 {
                     try
                     {
-                        foreach (DateTime day in EachDay(DateTime.Parse($"1-1-{DateTime.Now.Year}"), DateTime.Parse($"31-12-{DateTime.Now.Year}")))
-                        {
-                            System.IO.File.WriteAllText(System.IO.Directory.GetCurrentDirectory() + "debug.txt", day.ToString("yyyy-MM-dd HH':'mm':'ss"));
-                            command.CommandText = $"INSERT INTO Dates (ShcoolData) VALUES ('{day.Date.ToString("yyyy-MM-dd HH':'mm':'ss")}')";
-                            command.ExecuteNonQuery();
-                        }
+                        command.CommandText = $"INSERT INTO Notes (note, notesid) VALUES ({notes}, {attendanceId}";
+                        command.ExecuteNonQuery();
                         trans.Commit();
                     }
                     catch (SqlException)
@@ -105,7 +101,6 @@ namespace AttendanceRegistration.Controllers
                         throw;
                     }
                 }
-
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -126,20 +121,45 @@ namespace AttendanceRegistration.Controllers
 
         // POST: Attendance/Edit/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, IFormCollection collection)
+        public IActionResult Edit(Attendance ad)
         {
             try
             {
-                // TODO: Add update logic here
+                conn.Open();
+                using (SqlTransaction trans = conn.BeginTransaction())
+                using (SqlCommand command = conn.CreateCommand())
+                {
+                    command.Transaction = trans;
+                    try
+                    {
+                        command.CommandText = $"UPDATE Attendance SET hours = {ad.Hours} WHERE AttendanceId = {ad.AttendanceId}";
+                        command.ExecuteNonQuery();
+                        if (!(ad.Notes is null))
+                        {
+                            command.CommandText = $"UPDATE notes SET note = {ad.Notes} WHERE notesId = {ad.AttendanceId}";
+                            command.ExecuteNonQuery();
+                        }
+                        trans.Commit();
+                    }
+                    catch (SqlException)
+                    {
+                        trans.Rollback();
+                        throw;
+                    }
+                }
 
                 return RedirectToAction(nameof(Index));
             }
             catch
             {
-                return View();
+                return RedirectToAction(nameof(Index));
+            }
+            finally
+            {
+                conn.Close();
             }
         }
+
 
         // GET: Attendance/Delete/5
         public IActionResult Delete(int id)
