@@ -8,6 +8,8 @@ using AttendanceRegistration.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
+using Newtonsoft.Json;
 
 namespace AttendanceRegistration.Controllers
 {
@@ -23,7 +25,10 @@ namespace AttendanceRegistration.Controllers
         public IActionResult Index(string SearchString, int? pageIndex)
         {
             ViewData["CurrentSearch"] = !string.IsNullOrWhiteSpace(SearchString) ? SearchString : "";
-
+            List<Persons> persons = new List<Persons>();
+            List<Users> users = new List<Users>();
+            List<Dates> dates = new List<Dates>();
+            List<Notes> notes = new List<Notes>();
             List<Attendance> attendances = new List<Attendance>();
             List<Attendance> currentAttendance = new List<Attendance>();
 
@@ -33,26 +38,48 @@ namespace AttendanceRegistration.Controllers
                 using (SqlCommand command = new SqlCommand() { Connection = conn })
                 using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                 {
-                    command.CommandText = "SELECT * FROM SelectData";
+                    Notes note = new Notes();
+                    Users user = new Users();
+                    Dates date = new Dates();
+                    command.CommandText = "EXECUTE Data";
                     DataSet ds = new DataSet();
                     adapter.Fill(ds);
-                    foreach (DataRow dr in ds.Tables[0].Rows)
+                    List<PropertyInfo[]> props = new List<PropertyInfo[]>();
+                    PropertyInfo[] attendanceProps = typeof(Attendance).GetProperties();
+                    PropertyInfo[] datesProps = typeof(Dates).GetProperties();
+                    PropertyInfo[] usersProp = typeof(Users).GetProperties();
+                    PropertyInfo[] notesProp = typeof(Notes).GetProperties();
+                    props.Add(attendanceProps);
+                    props.Add(datesProps);
+                    props.Add(usersProp);
+                    props.Add(notesProp);
+                    for (int i = 0; i < ds.Tables.Count; i++)
                     {
-                        Users user = new Users() { Username = (string)dr["Username"], Email = (string)dr["Email"], Phonenumber = (string)dr["Phonenumber"], UserId = (int)dr["UserId"], Fullname = (string)dr["Fullname"] };
-                        Dates date = new Dates() { DateId = (int)dr["datesId"], ShcoolDate = (DateTime)dr["shcoolData"] };
-                        attendances.Add(new Attendance() { Notes = (string)dr["note"], AttendanceId = (int)dr["attendanceId"], Hours = (int)dr["hours"], UserId = user, DatesId = date });
-                    }
-                }
-                if (!string.IsNullOrWhiteSpace(SearchString))
-                {
-                    foreach (Attendance attendance in attendances)
-                    {
-                        if (attendance.UserId.Fullname == SearchString || attendance.UserId.Username == SearchString)
+                        foreach (DataRow dr in ds.Tables[i].Rows)
                         {
-                            currentAttendance.Add(attendance);
+                            date = new Dates() { DatesId = (int)dr[datesProps[0].Name], ShcoolData = (DateTime)dr[datesProps[1].Name] };
+                            user = new Users() { UserId = (int)dr[usersProp[0].Name], Username = (string)dr[usersProp[1].Name], Fullname = (string)dr[usersProp[2].Name], Phonenumber = (string)dr[usersProp[3].Name], Email = (string)dr[usersProp[4].Name] };
+                            if (dr[notesProp[1].Name] is DBNull)
+                            {
+                            }
+                            else
+                            {
+                                note = new Notes() { NotesId = (int)dr[notesProp[0].Name], Note = (string)dr[notesProp[1].Name] };
+                            }
+                            attendances.Add(new Attendance() { AttendanceId = (int)dr[attendanceProps[0].Name], Hours = (int)dr[attendanceProps[1].Name], UserId = (int)dr[attendanceProps[2].Name], DatesId = (int)dr[attendanceProps[3].Name], Dates = date, User = user });
+                            if (!persons.Any(c => c.Fullname == user.Fullname))
+                            {
+                                date.ShcoolData = DateTime.Parse(date.ShcoolData.ToString("dd-MM-yyyy"));
+                                persons.Add(new Persons() { Attendances = attendances.Where(c => c.User.Fullname == user.Fullname).ToList(), Fullname = user.Fullname, Notes = notes, Id = user.UserId });
+                            }
+                            else
+                            {
+                                Persons person = persons.Single(c => c.Fullname == user.Fullname);
+                                person.Attendances.Add(attendances.Find(a => a.User.Fullname == person.Fullname));
+                            }
                         }
                     }
-                    attendances = currentAttendance;
+
                 }
             }
             catch
@@ -63,7 +90,8 @@ namespace AttendanceRegistration.Controllers
             {
                 conn.Close();
             }
-            return View(PaginatedList<Attendance>.CreateAsync(attendances, pageIndex ?? 1, 20));
+            ViewData["JSON"] = JsonConvert.SerializeObject(persons);
+            return View(PaginatedList<Persons>.CreateAsync(persons, pageIndex ?? 1, 20));
         }
 
         // GET: Attendance/Details/5
@@ -121,7 +149,7 @@ namespace AttendanceRegistration.Controllers
 
         // POST: Attendance/Edit/5
         [HttpPost]
-        public IActionResult Edit(Attendance ad)
+        public IActionResult Edit(IList<Persons> ad)
         {
             try
             {
@@ -132,12 +160,19 @@ namespace AttendanceRegistration.Controllers
                     command.Transaction = trans;
                     try
                     {
-                        command.CommandText = $"UPDATE Attendance SET hours = {ad.Hours} WHERE AttendanceId = {ad.AttendanceId}";
-                        command.ExecuteNonQuery();
-                        if (!(ad.Notes is null))
+                        foreach (Persons item in ad)
                         {
-                            command.CommandText = $"UPDATE notes SET note = {ad.Notes} WHERE notesId = {ad.AttendanceId}";
-                            command.ExecuteNonQuery();
+                            for (int i = 0; i < item.Attendances.Count; i++)
+                            {
+
+                                command.CommandText = $"UPDATE Attendance SET hours = {item.Attendances[i].Hours} WHERE AttendanceId = {item.Attendances[i].AttendanceId}";
+                                command.ExecuteNonQuery();
+                                if (!(item.Notes is null))
+                                {
+                                    command.CommandText = $"UPDATE notes SET note = '{item.Notes[i].Note}' WHERE notesId = {item.Notes[i].NotesId}";
+                                    command.ExecuteNonQuery();
+                                }
+                            }
                         }
                         trans.Commit();
                     }

@@ -14,12 +14,13 @@ namespace AttendanceRegistration.Models
         {
             AttendanceId = id;
             Hours = hours;
-            Notes = notes;
         }
         public int AttendanceId { get; set; }
         public int Hours { get; set; }
-        public Users UserId { get; set; }
-        public Dates DatesId { get; set; }
-        public string Notes { get; set; }
+        public int UserId { get; set; }
+        public int DatesId { get; set; }
+        public Users User { get; set; }
+        public Dates Dates { get; set; }
+
     }
 }

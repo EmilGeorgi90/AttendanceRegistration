@@ -1,83 +1,55 @@
-﻿@model PaginatedList<AttendanceRegistration.Models.Attendance>
-
+﻿@model PaginatedList<AttendanceRegistration.Models.Persons>
+@using System.Reflection;
 @{
     ViewData["Title"] = "Index";
 }
+<div hidden="hidden" id="json">
+    @ViewData["JSON"]
+</div>
 <h2>Index</h2>
-<form asp-action="Index" method="get">
-    <p>
-        Find pr. navn <input type="text" name="SearchString" value="@ViewData["CurrentSearch"]" />
-    </p>
-    <input type="submit" value="search" class="btn btn-default" />
-    <a asp-action="Index">back to full list</a>
-</form>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.First().UserId.Fullname)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.First().Hours)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.First().DatesId.ShcoolDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.First().Notes)
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            IEnumerable<Attendance>
-    attendances = Model.Where(c => c.UserId.Fullname == item.UserId.Fullname && c.DatesId.ShcoolDate == item.DatesId.ShcoolDate.AddDays(+-7) && c.DatesId.ShcoolDate.DayOfWeek != DayOfWeek.Saturday || c.DatesId.ShcoolDate.DayOfWeek != DayOfWeek.Sunday);
-            int currentVal = 0;
-            foreach (Attendance item2 in attendances)
-            {
-                if (currentVal > 7 * 4)
-                {
-                    break;
-                }
-                currentVal += item2.Hours;
-            }
-            <tr onclick="clickEvent('@item.UserId.Fullname', @currentVal )">
-                <td>
-                    @Html.DisplayFor(modelItem => item.UserId.Fullname)
-                </td>
-                <td class="hours" contenteditable="true" data-Id="@item.AttendanceId" data-notes="@item.Notes">
-                    @Html.DisplayFor(modelItem => item.Hours)
-                </td>
-                <td contenteditable="true">
-                    @Html.DisplayFor(modelItem => item.DatesId.ShcoolDate)
-                </td>
-                <td contenteditable="true" class="notes" data-Id="@item.AttendanceId" data-hours="@item.Hours">
-                    @Html.DisplayFor(modelItem => item.Notes)
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-<div class="demo-container">
-    <div id="chart-demo">
-        <div id="pie"></div>
-        <div class="options">
-            <div class="caption">Options</div>
-            <div class="option">
-                <span>Label Overlapping Resolution Mode</span>
-                <div id="types"></div>
+<script>
+    var data = "";
+</script>
+<div id="data" class="table-bordered col-12 m-1 p-1">
+    <div class="col-12 m-1 p-0 container-fluid">
+        <div class="col-12 row">
+            <div class="col-1 p-0 m-0">
+                <p class="p-0">
+                    <strong>
+                        @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
+                    </strong>
+                </p>
+            </div>
+            <div class="col-11 p-0 positionRelative row" data-bind="foreach: persons[0].attendances">
+                <div class="rotater col-1 m-0 p-0">
+                    <div data-bind="text: dates"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 p-0 m-0 mt-2 row table-bordered" data-bind="foreach: persons">
+        <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
+        <div class="col-11 p-0 row" data-bind="foreach: attendances">
+            <div class="col-1 p-0">
+                <input type="text" class="col-12 p-0 text-center" name="hours" data-bind="value: hours" />
             </div>
         </div>
     </div>
 </div>
+
 @{
     var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
     var nextDisabled = !Model.HasNextPage ? "disabled" : "";
 }
-<nav aria-label="Page navigation">
+<nav aria-label="Page navigation" class="ml-1">
     <ul class="pagination">
-        <li><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex - 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="btn btn-default @prevDisabled">prev</a></li>
-        <li><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex + 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="btn btn-default @nextDisabled">next</a></li>
+        <li class="page-item"><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex - 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="page-link @prevDisabled">prev</a></li>
+        <li class="page-item"><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex + 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="page-link @nextDisabled">next</a></li>
     </ul>
 </nav>
+<div class="dx-viewport demo-container">
+    <div id="chart-demo">
+        <div id="pie" data-bind="dxPieChart: chartOptions"></div>
+    </div>
+</div>
+<script src="~/js/site.js"></script>

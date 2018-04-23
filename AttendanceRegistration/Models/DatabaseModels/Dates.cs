@@ -7,7 +7,7 @@ namespace AttendanceRegistration.Models
 {
     public class Dates
     {
-        public int DateId { get; set; }
-        public DateTime ShcoolDate { get; set; }
+        public int DatesId { get; set; }
+        public DateTime ShcoolData { get; set; }
     }
 }
