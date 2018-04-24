@@ -6,6 +6,7 @@
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="DevExtreme.Web" Version="17.2.7" />
     <PackageReference Include="knockoutjs" Version="3.4.2" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.7" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.0.3" />
@@ -25,11 +26,17 @@
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptRemoveComments>False</TypeScriptRemoveComments>
     <TypeScriptOutFile />
-    <TypeScriptOutDir>C:\source\repos\AttendanceRegistration\AttendanceRegistration\out</TypeScriptOutDir>
+    <TypeScriptOutDir></TypeScriptOutDir>
     <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
     <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
     <TypeScriptSourceMap>True</TypeScriptSourceMap>
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot />
   </PropertyGroup>
+  <ItemGroup>
+    <Content Remove="Views\Attendance\Index.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="Views\Attendance\Index.cshtml" />
+  </ItemGroup>
 </Project>
