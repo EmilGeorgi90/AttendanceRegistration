@@ -40,19 +40,29 @@ var something = new ForecastDetailCashFlowViewModel(mydata).persons;
 var aids = new something[0].attendances;
 var hours = aids[0].hours;
 console.log(something);
-$(document).on("click", ".fullname" ,function () {
-    console.log($(this));
+$(document).on("click", ".fullname", function () {
+    var value = 0;
+    var array = $(this).nextUntil(".fullname").children()
+    var array2 = $(this).parent().prev().children().children(".row").children()
+    var json = [{
+        val: value,
+        hours: value
+    },
+        {
+            }]
+    array.each(function (index) { value += ($(this).children()[0].value) })
+    console.log(json);
     var viewModel = {
         chartOptions: {
             size: {
                 width: 500
             },
             palette: "bright",
-            dataSource: aids,
+            dataSource: value,
             series: [
                 {
-                    argumentField: aids.user,
-                    valueField: "hours",
+                    argumentField: 7*4,
+                    valueField: value,
                     label: {
                         visible: true,
                         connector: {
@@ -62,7 +72,7 @@ $(document).on("click", ".fullname" ,function () {
                     }
                 }
             ],
-            title: "Area of Countries",
+            title: "frevær",
             "export": {
                 enabled: true
             },

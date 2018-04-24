@@ -33,10 +33,4 @@
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot />
   </PropertyGroup>
-  <ItemGroup>
-    <Content Remove="Views\Attendance\Index.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <ApplicationDefinition Include="Views\Attendance\Index.cshtml" />
-  </ItemGroup>
 </Project>
