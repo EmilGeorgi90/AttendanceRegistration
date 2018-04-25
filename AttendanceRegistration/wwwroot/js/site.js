@@ -39,35 +39,35 @@ $(function () {
 var something = new ForecastDetailCashFlowViewModel(mydata).persons;
 var aids = new something[0].attendances;
 var hours = aids[0].hours;
-console.log(something);
 $(document).on("click", ".fullname", function () {
+    
     var value = 0;
     var array = $(this).nextUntil(".fullname").children()
     var array2 = $(this).parent().prev().children().children(".row").children()
+    console.log(data.prototype.getWeekYear);
+    array.each(function (index) { value += parseInt($(this).children()[0].value) })
     var json = [{
-        val: value,
-        hours: value
-    },
-        {
-            }]
-    array.each(function (index) { value += ($(this).children()[0].value) })
-    console.log(json);
+        name: $(this)[0].innerText,
+        hours: value / 28 * 100
+    }, {
+            name: "hours of week",
+            hours: 28
+        }]
     var viewModel = {
         chartOptions: {
             size: {
                 width: 500
             },
             palette: "bright",
-            dataSource: value,
+            dataSource: json,
             series: [
                 {
-                    argumentField: 7*4,
-                    valueField: value,
+                    argumentField: "name",
+                    valueField: "hours",
                     label: {
                         visible: true,
-                        connector: {
-                            visible: true,
-                            width: 1
+                        customizeText: function (arg) {
+                            return arg.argumentText + " ( " + arg.percentText + ")";
                         }
                     }
                 }
@@ -99,3 +99,21 @@ $(document).on("click", ".fullname", function () {
 
     ko.applyBindings(viewModel, document.getElementById("chart-demo"));
 });
+Date.prototype.getWeek = function () {
+    var date = new Date(this.getTime());
+    date.setHours(0, 0, 0, 0);
+    // Thursday in current week decides the year.
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    // January 4 is always in week 1.
+    var week1 = new Date(date.getFullYear(), 0, 4);
+    // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
+        - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
+// Returns the four-digit year corresponding to the ISO week of the date.
+Date.prototype.getWeekYear = function () {
+    var date = new Date(this.getTime());
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    return date.getFullYear();
+}
