@@ -37,7 +37,7 @@ namespace AttendanceRegistration.Controllers
             if (User.Identity.IsAuthenticated)
             {
                 // Redirect to home page if the user is authenticated.
-                return RedirectToAction(nameof(HomeController.Index), "Home");
+                return RedirectToAction(nameof(AttendanceController.Index), "Attendance");
             }
 
             return View();
