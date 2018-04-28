@@ -85,7 +85,7 @@ namespace AttendanceRegistration.Controllers
                         else
                         {
                             Persons person = persons.Single(c => c.Fullname == user.Fullname);
-                            person.Attendances.Add(attendances.Find(a => a.User.Fullname == person.Fullname));
+                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname);
                         }
                     }
                 }
@@ -132,6 +132,7 @@ namespace AttendanceRegistration.Controllers
                     try
                     {
                         int hours = 15 - DateTime.Now.Hour;
+                        hours = hours < 0 ? 0 : hours;
                         string date = DateTime.Now.Date.ToString("yyyy-MM-dd");
                         DateTime ndt = Convert.ToDateTime(date);
 

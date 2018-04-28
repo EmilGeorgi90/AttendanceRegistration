@@ -1,22 +1,12 @@
-/*!
-* DevExtreme (dx.messages.it.js)
-* Version: 17.2.7
-* Build date: Fri Mar 16 2018
-*
-* Copyright (c) 2012 - 2018 Developer Express Inc. ALL RIGHTS RESERVED
-* Read about DevExtreme licensing here: https://js.devexpress.com/Licensing/
-*/
-"use strict";
-
-! function(root, factory) {
+function (root, factory) {
     if ("function" === typeof define && define.amd) {
-        define(function(require) {
+        define(function (require) {
             factory(require("devextreme/localization"))
         })
     } else {
         factory(DevExpress.localization)
     }
-}(this, function(localization) {
+}(this, function (localization) {
     localization.loadMessages({
         it: {
             Yes: "Si",

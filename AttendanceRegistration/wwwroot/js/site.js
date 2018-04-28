@@ -126,7 +126,7 @@ $(document).on("focusout", "#hoursEdit", function () {
     for (var i = 0; i < Attendanceid.length; i++) {
         if (Attendanceid[i].Fullname === $(this).parent().parent().prev(".fullname")[0].innerText) {
             var dataToServer = { hours: parseInt($(this).val()), attendanceId: Attendanceid[i].Attendances[0].AttendanceId };
-            $.post("Attendance/Edit", dataToServer)
+            $.post("Attendance/Edit", dataToServer);
         }
     }
 });
