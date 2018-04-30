@@ -4,6 +4,7 @@
     <UserSecretsId>aspnet-AttendanceRegistration-661C5DCE-804F-4A4A-A6D5-A85B30E9C1BC</UserSecretsId>
     <WebProject_DirectoryAccessLevelKey>0</WebProject_DirectoryAccessLevelKey>
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
+    <StartupObject>AttendanceRegistration.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DevExtreme.Web" Version="17.2.7" />

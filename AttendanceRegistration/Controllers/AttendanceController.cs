@@ -27,10 +27,8 @@ namespace AttendanceRegistration.Controllers
             ViewData["CurrentSearch"] = !string.IsNullOrWhiteSpace(SearchString) ? SearchString : "";
             List<Persons> persons = new List<Persons>();
             List<Users> users = new List<Users>();
-            List<Dates> dates = new List<Dates>();
             List<Notes> notes = new List<Notes>();
             List<Attendance> attendances = new List<Attendance>();
-            List<Attendance> currentAttendance = new List<Attendance>();
 
             try
             {
@@ -42,11 +40,14 @@ namespace AttendanceRegistration.Controllers
                     Notes note = new Notes();
                     Users user = new Users();
                     Dates date = new Dates();
+                    //Getting all attendance in localDB
                     command.CommandText = "EXECUTE Data";
                     DataSet ds = new DataSet();
                     adapter.Fill(ds);
+                    //Getting Úser with the logged in Email
                     command.CommandText = $"SELECT * from users where email = '{User.Identity.Name}'";
                     adapter.Fill(userdata);
+                    //if no user in the database then add the user in the database
                     if (userdata.Tables[0].Rows.Count <= 0)
                     {
                         command.CommandText = $"INSERT INTO users (Fullname, email) values ('{User.Identity.Name.Split('@')[0]}', '{User.Identity.Name}')";
@@ -55,40 +56,37 @@ namespace AttendanceRegistration.Controllers
                         userdata.Clear();
                         adapter.Fill(userdata);
                     }
-                    List<PropertyInfo[]> props = new List<PropertyInfo[]>();
-                    PropertyInfo[] attendanceProps = typeof(Attendance).GetProperties();
-                    PropertyInfo[] datesProps = typeof(Dates).GetProperties();
-                    PropertyInfo[] usersProp = typeof(Users).GetProperties();
-                    PropertyInfo[] notesProp = typeof(Notes).GetProperties();
-                    props.Add(attendanceProps);
-                    props.Add(datesProps);
-                    props.Add(usersProp);
-                    props.Add(notesProp);
-
+                    //looping all attendance in the 'ds' dataset
                     foreach (DataRow dr in ds.Tables[0].Rows)
                     {
-                        date = new Dates() { DatesId = (int)dr[datesProps[0].Name], ShcoolData = (DateTime)dr[datesProps[1].Name] };
-                        user = new Users() { UserId = (int)dr[usersProp[0].Name], Fullname = (string)dr[usersProp[2].Name], Email = (string)dr[usersProp[4].Name] };
-                        if (dr[notesProp[1].Name] is DBNull)
+                        date = new Dates() { DatesId = (int)dr["DatesId"], ShcoolData = (DateTime)dr["ShcoolData"] };
+                        user = new Users() { UserId = (int)dr["UserId"], Fullname = (string)dr["Fullname"], Email = (string)dr["Email"] };
+                        //checking if notes are null becuz note is nullable
+                        if (dr["Note"] is DBNull)
                         {
                         }
                         else
                         {
-                            note = new Notes() { NotesId = (int)dr[notesProp[0].Name], Note = (string)dr[notesProp[1].Name] };
+                            note = new Notes() { NotesId = (int)dr["NotesId"], Note = (string)dr["Note"] };
                         }
-                        attendances.Add(new Attendance() { AttendanceId = (int)dr[attendanceProps[0].Name], Hours = (int)dr[attendanceProps[1].Name], UserId = (int)dr[attendanceProps[2].Name], DatesId = (int)dr[attendanceProps[3].Name], Dates = date, User = user });
+                        attendances.Add(new Attendance() { AttendanceId = (int)dr["AttendanceId"], Hours = (int)dr["Hours"], UserId = (int)dr["UserId"], DatesId = (int)dr["DatesId"], Dates = date, User = user });
+                        //if no user in the list
                         if (!persons.Any(c => c.Fullname == user.Fullname))
                         {
-                            date.ShcoolData = DateTime.Parse(date.ShcoolData.ToString("dd-MM-yyyy"));
                             persons.Add(new Persons() { Attendances = attendances.Where(c => c.User.Fullname == user.Fullname).ToList(), Fullname = user.Fullname, Notes = notes, Id = user.UserId });
                         }
+                        //if a user is already in the list then only add he's attendance
                         else
                         {
                             Persons person = persons.Single(c => c.Fullname == user.Fullname);
-                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname);
+                            DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.Now,
+                            TimeZoneInfo.Local.GetUtcOffset(DateTime.Now.AddDays(-5)));
+                            Console.WriteLine(dateTimeOffset.CompareTo(date.ShcoolData.Date) <= 5);
+                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname && date.ShcoolData.Date <= DateTime.Now).TakeLast(5).ToList();
                         }
                     }
                 }
+                //checking if it is a students
                 if (User.Identity.Name.Contains("edu.campusvejle.dk"))
                 {
                     persons = persons.Where(p => p.Fullname == User.Identity.Name.Split('@')[0]).ToList();
@@ -102,21 +100,12 @@ namespace AttendanceRegistration.Controllers
             {
                 conn.Close();
             }
+            //Serialize to json for the javascript
             ViewData["JSON"] = JsonConvert.SerializeObject(persons);
+            //adding it to the pagination
             return View(PaginatedList<Persons>.CreateAsync(persons, pageIndex ?? 1, 20));
         }
 
-        // GET: Attendance/Details/5
-        public IActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: Attendance/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
 
         // POST: Attendance/Create
         [HttpPost]
@@ -131,65 +120,82 @@ namespace AttendanceRegistration.Controllers
                 {
                     try
                     {
-                        int hours = 15 - DateTime.Now.Hour;
-                        hours = hours < 0 ? 0 : hours;
-                        string date = DateTime.Now.Date.ToString("yyyy-MM-dd");
-                        DateTime ndt = Convert.ToDateTime(date);
-
-                        int userid = 0;
-                        int datesId = 0;
-                        int attendanceId = 0;
-                        DataSet set = new DataSet();
-                        DataSet ds = new DataSet();
-                        command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date}'";
-                        adapter.Fill(ds);
-                        if (ds.Tables[0].Rows.Count == 0)
+                        foreach (DateTime date in EachDay(DateTime.Parse("1/1/18"), DateTime.Parse("30/12/18")))
                         {
-                            command.CommandText = $"INSERT INTO Dates ([ShcoolData]) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date}')))";
-                            command.ExecuteNonQuery();
-                        }
-                        foreach (DataRow item in ds.Tables[0].Rows)
-                        {
-                            datesId = (int)item["datesId"];
-                        }
-                        DataSet user = new DataSet();
-                        command.CommandText = $"SELECT userid FROM users where email = '{User.Identity.Name}'";
-                        adapter.Fill(user);
-                        foreach (DataRow item in user.Tables[0].Rows)
-                        {
-                            userid = (int)item["UserId"];
-                        }
-                        command.CommandText = $"Select * FROM Attendance WHERE DatesId = {datesId} AND userid = {userid}";
-                        adapter.Fill(set);
-                        if (set.Tables[0].Rows.Count > 0)
-                        {
-                            RedirectToAction(nameof(Index));
-                        }
-                        else
-                        {
-                            command.CommandText = $"INSERT INTO attendance (hours, userid, datesId) VALUES ({hours}, {userid}, {datesId})";
-                            command.ExecuteNonQuery();
-                            DataSet attendance = new DataSet();
-                            command.CommandText = $"SELECT AttendanceId From attendance where userid = {userid} AND datesid = {datesId}";
-                            adapter.Fill(attendance);
-                            foreach (DataRow item in attendance.Tables[0].Rows)
+                            //the hours to add to the database '15' is the time we have off school and then - the current time you checked in
+                            int hours = 0;
+                            //linq if you are tolate but skill trying to check in it will go to minus and then exception is throwen becuz sql int cant be zero
+                            hours = hours < 0 ? 0 : hours;
+                            //setting the date
+                            int userid = 0;
+                            int datesId = 0;
+                            int attendanceId = 0;
+                            DataSet set = new DataSet();
+                            DataSet ds = new DataSet();
+                            command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
+                            adapter.Fill(ds);
+                            //looking if the date does not already exists in the database
+                            if (ds.Tables[0].Rows.Count == 0)
                             {
-                                attendanceId = (int)item["AttendanceId"];
+                                command.CommandText = $"INSERT INTO Dates ([ShcoolData]) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')))";
+                                command.ExecuteNonQuery();
+                                ds.Clear();
+                                command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
+                                adapter.Fill(ds);
                             }
-                            command.CommandText = $"INSERT INTO Notes (notesId, note) VALUES ({attendanceId}, null)";
-                            command.ExecuteNonQuery();
+                            //gets the lates datesId
+                            foreach (DataRow item in ds.Tables[0].Rows)
+                            {
+                                datesId = (int)item["datesId"];
+                            }
+                            DataSet user = new DataSet();
+                            command.CommandText = $"SELECT userid FROM users where email = '{User.Identity.Name}'";
+                            adapter.Fill(user);
+                            //adding the userid to the userid int
+                            foreach (DataRow item in user.Tables[0].Rows)
+                            {
+                                userid = (int)item["UserId"];
+                            }
+                            command.CommandText = $"Select * FROM Attendance WHERE DatesId = {datesId} AND userid = {userid}";
+                            adapter.Fill(set);
+                            //checking if the user already check in today
+                            if (set.Tables[0].Rows.Count > 0)
+                            {
+                                RedirectToAction(nameof(Index));
+                            }
+                            //if not then add the attedance
+                            else
+                            {
+                                //insert into attendance
+                                command.CommandText = $"INSERT INTO attendance (hours, userid, datesId) VALUES ({hours}, {userid}, {datesId})";
+                                command.ExecuteNonQuery();
+                                DataSet attendance = new DataSet();
+                                //getting the id so we can add a note
+                                command.CommandText = $"SELECT AttendanceId From attendance where userid = {userid} AND datesid = {datesId}";
+                                adapter.Fill(attendance);
+                                foreach (DataRow item in attendance.Tables[0].Rows)
+                                {
+                                    attendanceId = (int)item["AttendanceId"];
+                                }
+                                //insert the note with value null (ment to edit late)
+                                //TODO: the insert adds a note and not null
+                                command.CommandText = $"INSERT INTO Notes (notesId, note) VALUES ({attendanceId}, null)";
+                                command.ExecuteNonQuery();
+                            }
                         }
+
                     }
                     catch (SqlException)
                     {
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
             catch
             {
-                return RedirectToAction(nameof(Index));
+                throw;
             }
             finally
             {
@@ -228,31 +234,13 @@ namespace AttendanceRegistration.Controllers
                 conn.Close();
             }
         }
-
-
-        // GET: Attendance/Delete/5
-        public IActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: Attendance/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                // TODO: Add delete logic here
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
-        public IEnumerable<DateTime> EachDay(DateTime from, DateTime thru)
+        /// <summary>
+        /// getting each day
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="thru"></param>
+        /// <returns></returns>
+        private IEnumerable<DateTime> EachDay(DateTime from, DateTime thru)
         {
             for (var day = from.Date; day.Date <= thru.Date; day = day.AddDays(1))
                 yield return day;

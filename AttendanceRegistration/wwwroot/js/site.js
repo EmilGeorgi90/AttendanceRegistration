@@ -23,25 +23,31 @@ function Person(id, fullname, attendances, notes) {
     }));
 }
 // Overall viewmodel for this screen, along with initial state
-
-function ForecastDetailCashFlowViewModel(person) {
+//the constructer to person class
+function PersonViewModel(person) {
     var self = this;
     self.persons = ko.utils.arrayMap(person, function (person) {
         return new Person(person.Id, person.Fullname, person.Attendances, person.Notes);
     });
 }
+//getting json from browser/controller
 var json = document.getElementById("json").innerHTML;
 var mydata = JSON.parse(json);
 $(function () {
-    ko.applyBindings(new ForecastDetailCashFlowViewModel(mydata), document.getElementById("data"));
+    //bind the person data
+    ko.applyBindings(new PersonViewModel(mydata), document.getElementById("data"));
 });
+//the pie creater
 $(document).on("click", ".fullname", function () {
     ko.cleanNode(document.getElementById("chart-demo"));
     var value = 0;
+    //getting all hours
     var array = $(this).nextUntil(".fullname").children(".hours");
+    //getting username
     var array2 = $(this).parent().prev().children().children(".row").children();
     var some = array2[0].innerText.split('/');
     var array3 = [];
+    //each function
     $(some).each(function (index, element) {
         if (index === 0) {
             array3.push(element);
@@ -59,7 +65,7 @@ $(document).on("click", ".fullname", function () {
     } else {
         weekIsEvenOrOdd = 7 * 4;
     }
-
+    //pluses value 
     array.each(function (index) {
         if ($(this).children().prop("tagName") === "DIV") {
             value += parseInt($(this).children()[0].innerText);
@@ -118,9 +124,9 @@ $(document).on("click", ".fullname", function () {
     }
     ko.applyBindings(viewModel, document.getElementById("chart-demo"));
 });
-
+//edit function for the teacher to edit the students hours
 $(document).on("focusout", "#hoursEdit", function () {
-    var dataJson = new ForecastDetailCashFlowViewModel(mydata);
+    var dataJson = new PersonViewModel(mydata);
     var json = document.getElementById("json").innerHTML;
     var Attendanceid = JSON.parse(json);
     for (var i = 0; i < Attendanceid.length; i++) {
@@ -130,7 +136,7 @@ $(document).on("focusout", "#hoursEdit", function () {
         }
     }
 });
-
+//getting week of the year
 function WeekOfYeah(dateOfYeah) {
     var onejan = new Date(dateOfYeah);
     onejan.setUTCDate(onejan.getUTCDate() + 4 - (onejan.getUTCDay() || 7));
@@ -138,7 +144,7 @@ function WeekOfYeah(dateOfYeah) {
     return Math.ceil((((onejan - yearStart) / 86400000) + 1) / 7);
 }
 
-
+//checking if the week is even and throw exception if it is not a date
 function weekIsEven(dateOfYeah) {
     if (WeekOfYeah(dateOfYeah) % 2 === 1) {
         return false;

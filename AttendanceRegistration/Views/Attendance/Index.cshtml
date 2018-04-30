@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Index";
 }
-
+@* checking if it is a student there are logged in *@
 @if (User.Identity.Name.Split('@')[1] == "edu.campusvejle.dk")
 {
     <div hidden="hidden" id="json">
@@ -13,9 +13,7 @@
     <script>
         var data = "";
     </script>
-    <form asp-action="Create">
-        <input type="submit" value="check in" />
-    </form>
+
     <div id="data" class="table-bordered col-12 m-1 p-1">
         <div class="col-12 m-1 p-0 container-fluid">
             <div class="col-12 row">
