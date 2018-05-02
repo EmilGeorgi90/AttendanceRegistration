@@ -13,29 +13,32 @@
     <script>
         var data = "";
     </script>
-
-    <div id="data" class="table-bordered col-12 m-1 p-1">
-        <div class="col-12 m-1 p-0 container-fluid">
-            <div class="col-12 row">
-                <div class="col-1 p-0 m-0">
-                    <p class="p-0">
-                        <strong>
-                            @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
-                        </strong>
-                    </p>
-                </div>
-                <div class="col-11 p-0 positionRelative row" data-bind="foreach: persons[0].attendances">
-                    <div class="rotater col-1 m-0 p-0">
-                        <div data-bind="text: dates"></div>
+    <div id="data" class="table-bordered col-12 m-1 p-1 d-flex">
+        <div class="col-12 m-0 p-0 d-flex flex-column" id="draggable">
+            <div class="m-1 p-0">
+                <div class="col-12 d-flex p-0">
+                    <div class="col-1 p-0 m-0">
+                        <p class="p-0">
+                            <strong>
+                                @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
+                            </strong>
+                        </p>
+                    </div>
+                    <div class="col-11 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
+                        <div class="dates">
+                            <div class="rotater m-0 p-0 flex-nowrap">
+                                <div data-bind="text: dates"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-12 p-0 m-0 mt-2 row table-bordered" data-bind="foreach: persons">
-            <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
-            <div class="col-11 p-0 row" data-bind="foreach: attendances">
-                <div class="col-1 p-0 hours">
-                    <div type="text" class="col-12 p-0 text-center" name="hours" data-bind="text: hours" ></div>
+            <div class="col-12 p-0 m-0 mt-2 d-flex flex-row" data-bind="foreach: persons">
+                <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
+                <div class="p-0 col-11 d-flex justify-content-start" data-bind="foreach: attendances">
+                    <div class="p-0 m-1 justify-content-start hours">
+                        <div type="text" class=" p-0 texter justify-content-start" name="hours" data-bind="text: hours"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -56,37 +59,37 @@ else
     <script>
         var data = "";
     </script>
-    <div id="data" class="table-bordered col-12 m-1 p-1">
-        <div class="col-12 m-1 p-0 container-fluid">
-            <div class="col-12 row">
-                <div class="col-1 p-0 m-0">
-                    <p class="p-0">
-                        <strong>
-                            @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
-                        </strong>
-                    </p>
-                </div>
-                <div class="col-11 p-0 positionRelative row" data-bind="foreach: persons[0].attendances">
-                    <div class="rotater col-1 m-0 p-0">
-                        <div data-bind="text: dates"></div>
+    <div id="data" class="table-bordered col-12 m-1 p-1 d-flex">
+        <div class="col-12 m-0 p-0 d-flex flex-column" id="draggable">
+            <div class="m-1 p-0">
+                <div class="col-12 d-flex p-0">
+                    <div class="col-1 p-0 m-0">
+                        <p class="p-0">
+                            <strong>
+                                @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
+                            </strong>
+                        </p>
+                    </div>
+                    <div class="col-11 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
+                        <div class="rotater m-1 p-0 flex-nowrap">
+                            <div data-bind="text: dates"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-12 p-0 m-0 mt-2 row table-bordered" data-bind="foreach: persons">
-            <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
-            <div class="col-11 p-0 row" data-bind="foreach: attendances">
-                <div class="col-1 p-0 hours">
-                    <input type="text" class="col-12 p-0 text-center" id="hoursEdit" name="hours" data-bind="value: hours" />
+            <div class="col-12 p-0 m-0 mt-2 d-flex flex-row" data-bind="foreach: persons">
+                <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
+                <div class="p-0 col-11 d-flex justify-content-start" data-bind="foreach: attendances">
+                    <div class="p-0 m-1 justify-content-start hours">
+                        <input type="text" class="col-12 p-0" id="hoursEdit" name="hours" data-bind="value: hours" />
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-
     var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
     var nextDisabled = !Model.HasNextPage ? "disabled" : "";
-
     <nav aria-label="Page navigation" class="ml-1">
         <ul class="pagination">
             <li class="page-item"><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex - 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="page-link @prevDisabled">prev</a></li>

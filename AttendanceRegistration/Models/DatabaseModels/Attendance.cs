@@ -21,6 +21,7 @@ namespace AttendanceRegistration.Models
         public int DatesId { get; set; }
         public Users User { get; set; }
         public Dates Dates { get; set; }
-
+        public Model Models { get; set; }
+        public Semester Semester { get; set; }
     }
 }

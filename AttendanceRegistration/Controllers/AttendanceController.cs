@@ -1,15 +1,13 @@
-﻿using System;
+﻿using AttendanceRegistration.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
-using AttendanceRegistration.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Reflection;
-using Newtonsoft.Json;
 
 namespace AttendanceRegistration.Controllers
 {
@@ -37,13 +35,12 @@ namespace AttendanceRegistration.Controllers
                 using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                 {
                     DataSet userdata = new DataSet();
+                    Semester semester = new Semester();
+                    Model model = new Model();
                     Notes note = new Notes();
                     Users user = new Users();
                     Dates date = new Dates();
                     //Getting all attendance in localDB
-                    command.CommandText = "EXECUTE Data";
-                    DataSet ds = new DataSet();
-                    adapter.Fill(ds);
                     //Getting Úser with the logged in Email
                     command.CommandText = $"SELECT * from users where email = '{User.Identity.Name}'";
                     adapter.Fill(userdata);
@@ -56,11 +53,26 @@ namespace AttendanceRegistration.Controllers
                         userdata.Clear();
                         adapter.Fill(userdata);
                     }
+                    DataSet ds = new DataSet();
+                    command.CommandText = "EXECUTE Data";
+                    ds.Clear();
+                    adapter.Fill(ds);
+                    if (ds.Tables[0].Rows.Count < 150)
+                    {
+                        Create("");
+                        ds.Clear();
+                        command.CommandText = "EXECUTE Data";
+                        adapter.Fill(ds);
+
+                    }
                     //looping all attendance in the 'ds' dataset
                     foreach (DataRow dr in ds.Tables[0].Rows)
                     {
                         date = new Dates() { DatesId = (int)dr["DatesId"], ShcoolData = (DateTime)dr["ShcoolData"] };
                         user = new Users() { UserId = (int)dr["UserId"], Fullname = (string)dr["Fullname"], Email = (string)dr["Email"] };
+                        model = new Model() { ModelId = (int)dr["ModelsId"], ModelStartDate = (DateTime)dr["ModelStartDate"], ModelEndDate = (DateTime)dr["ModelEndDate"] };
+                        semester = new Semester() { SemesterId = (int)dr["SemesterId"], SemesterStartDate = (DateTime)dr["SemesterStartDate"], SemesterEndDate = (DateTime)dr["SemesterEndDate"] };
+
                         //checking if notes are null becuz note is nullable
                         if (dr["Note"] is DBNull)
                         {
@@ -69,7 +81,7 @@ namespace AttendanceRegistration.Controllers
                         {
                             note = new Notes() { NotesId = (int)dr["NotesId"], Note = (string)dr["Note"] };
                         }
-                        attendances.Add(new Attendance() { AttendanceId = (int)dr["AttendanceId"], Hours = (int)dr["Hours"], UserId = (int)dr["UserId"], DatesId = (int)dr["DatesId"], Dates = date, User = user });
+                        attendances.Add(new Attendance() { AttendanceId = (int)dr["AttendanceId"], Hours = (int)dr["Hours"], UserId = (int)dr["UserId"], DatesId = (int)dr["DatesId"], Dates = date, User = user, Semester = semester, Models = model });
                         //if no user in the list
                         if (!persons.Any(c => c.Fullname == user.Fullname))
                         {
@@ -79,10 +91,7 @@ namespace AttendanceRegistration.Controllers
                         else
                         {
                             Persons person = persons.Single(c => c.Fullname == user.Fullname);
-                            DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.Now,
-                            TimeZoneInfo.Local.GetUtcOffset(DateTime.Now.AddDays(-5)));
-                            Console.WriteLine(dateTimeOffset.CompareTo(date.ShcoolData.Date) <= 5);
-                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname && date.ShcoolData.Date <= DateTime.Now).TakeLast(5).ToList();
+                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname && Between(DateTime.Now, a.Models.ModelStartDate, a.Models.ModelEndDate));
                         }
                     }
                 }
@@ -110,11 +119,10 @@ namespace AttendanceRegistration.Controllers
         // POST: Attendance/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(string note)
+        public void Create(string note)
         {
             try
             {
-                conn.Open();
                 using (SqlCommand command = new SqlCommand() { Connection = conn })
                 using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                 {
@@ -122,6 +130,7 @@ namespace AttendanceRegistration.Controllers
                     {
                         foreach (DateTime date in EachDay(DateTime.Parse("1/1/18"), DateTime.Parse("30/12/18")))
                         {
+
                             //the hours to add to the database '15' is the time we have off school and then - the current time you checked in
                             int hours = 0;
                             //linq if you are tolate but skill trying to check in it will go to minus and then exception is throwen becuz sql int cant be zero
@@ -130,23 +139,43 @@ namespace AttendanceRegistration.Controllers
                             int userid = 0;
                             int datesId = 0;
                             int attendanceId = 0;
+                            int semesterId = 0;
+                            int modelId = 0;
                             DataSet set = new DataSet();
                             DataSet ds = new DataSet();
                             command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
                             adapter.Fill(ds);
                             //looking if the date does not already exists in the database
-                            if (ds.Tables[0].Rows.Count == 0)
+                            DayOfWeek day = CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(date);
+
+                            // Return the week of our adjusted day
+                            int week = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+
+                            if (week % 2 == 1)
                             {
-                                command.CommandText = $"INSERT INTO Dates ([ShcoolData]) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')))";
-                                command.ExecuteNonQuery();
-                                ds.Clear();
-                                command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
-                                adapter.Fill(ds);
+                                if (ds.Tables[0].Rows.Count == 0 && date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday && date.DayOfWeek != DayOfWeek.Friday)
+                                {
+                                    command.CommandText = $"INSERT INTO Dates ([ShcoolData]) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')))";
+                                    command.ExecuteNonQuery();
+                                    ds.Clear();
+                                    command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
+                                    adapter.Fill(ds);
+                                }
                             }
-                            //gets the lates datesId
-                            foreach (DataRow item in ds.Tables[0].Rows)
+                            else if (week % 2 == 0)
                             {
-                                datesId = (int)item["datesId"];
+                                if (ds.Tables[0].Rows.Count == 0 && date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+                                {
+                                    command.CommandText = $"INSERT INTO Dates ([ShcoolData]) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')))";
+                                    command.ExecuteNonQuery();
+                                    ds.Clear();
+                                    command.CommandText = $"Select datesId FROM dates WHERE ShcoolData = '{date.ToString("yyyy/MM/dd")}'";
+                                    adapter.Fill(ds);
+                                }
+                            }
+                            else
+                            {
+                                throw new Exception();
                             }
                             DataSet user = new DataSet();
                             command.CommandText = $"SELECT userid FROM users where email = '{User.Identity.Name}'";
@@ -156,18 +185,81 @@ namespace AttendanceRegistration.Controllers
                             {
                                 userid = (int)item["UserId"];
                             }
+
+                            //gets the lates datesId
+                            foreach (DataRow item in ds.Tables[0].Rows)
+                            {
+                                datesId = (int)item["datesId"];
+                            }
                             command.CommandText = $"Select * FROM Attendance WHERE DatesId = {datesId} AND userid = {userid}";
                             adapter.Fill(set);
-                            //checking if the user already check in today
                             if (set.Tables[0].Rows.Count > 0)
                             {
-                                RedirectToAction(nameof(Index));
+                                continue;
                             }
-                            //if not then add the attedance
-                            else
+                            DataSet models = new DataSet();
+                            command.CommandText = $"SELECT * from Models";
+                            adapter.Fill(models);
+                            foreach (DataRow item in models.Tables[0].Rows)
                             {
+                                if (Between(date, (DateTime)item["ModelStartDate"], (DateTime)item["ModelEndDate"]))
+                                {
+                                    modelId = (int)item["ModelsId"];
+                                }
+                            }
+                            if (modelId == 0)
+                            {
+                                command.CommandText = $"INSERT INTO Models (ModelStartDate, ModelEndDate) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')),CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.AddDays(42).ToString("yyyy/MM/dd")}')))";
+                                command.ExecuteNonQuery();
+                                command.CommandText = $"SELECT * from Models";
+                                models.Clear();
+                                adapter.Fill(models);
+                                foreach (DataRow item in models.Tables[0].Rows)
+                                {
+                                    if (Between(date, (DateTime)item["ModelStartDate"], (DateTime)item["ModelEndDate"]))
+                                    {
+                                        modelId = (int)item["ModelsId"];
+                                    }
+                                }
+                            }
+                            DataSet semModels = new DataSet();
+                            DataSet semester = new DataSet();
+                            if (CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday) == 3 || CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday) == 33)
+                            {
+                                command.CommandText = $"INSERT INTO Semester (SemesterStartDate, SemesterEndDate) VALUES (CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.ToString("yyyy/MM/dd")}')),CONVERT(SMALLDATETIME, CONVERT(DATETIME,'{date.AddDays(126).ToString("yyyy/MM/dd")}')))";
+                                command.ExecuteNonQuery();
+                                command.CommandText = $"SELECT * FROM Semester";
+                                adapter.Fill(semester);
+                                foreach (DataRow item in semester.Tables[0].Rows)
+                                {
+                                    if (Between(date, (DateTime)item["SemesterStartDate"], (DateTime)item["SemesterEndDate"]))
+                                    {
+                                        semesterId = (int)item["SemesterId"];
+                                    }
+                                }
+                            }
+                            if (semesterId == 0)
+                            {
+                                command.CommandText = $"SELECT * FROM Semester";
+                                adapter.Fill(semester);
+                                foreach (DataRow item in semester.Tables[0].Rows)
+                                {
+                                    if (Between(date, (DateTime)item["SemesterStartDate"], (DateTime)item["SemesterEndDate"]))
+                                    {
+                                        semesterId = (int)item["SemesterId"];
+                                    }
+                                }
+                            }
+
+                            //checking if the user already check in today
+
+                            //if not then add the attedance
+
+                            if (semesterId != 0 && datesId != 0 && modelId != 0 && userid != 0)
+                            {
+
                                 //insert into attendance
-                                command.CommandText = $"INSERT INTO attendance (hours, userid, datesId) VALUES ({hours}, {userid}, {datesId})";
+                                command.CommandText = $"INSERT INTO attendance (hours, userid, datesId, SemesterId, ModelId) VALUES ({hours}, {userid}, {datesId}, {semesterId}, {modelId})";
                                 command.ExecuteNonQuery();
                                 DataSet attendance = new DataSet();
                                 //getting the id so we can add a note
@@ -182,6 +274,7 @@ namespace AttendanceRegistration.Controllers
                                 command.CommandText = $"INSERT INTO Notes (notesId, note) VALUES ({attendanceId}, null)";
                                 command.ExecuteNonQuery();
                             }
+
                         }
 
                     }
@@ -190,17 +283,12 @@ namespace AttendanceRegistration.Controllers
                         throw;
                     }
                 }
-
-                return RedirectToAction(nameof(Index));
             }
             catch
             {
                 throw;
             }
-            finally
-            {
-                conn.Close();
-            }
+
         }
 
         // POST: Attendance/Edit/5
@@ -244,6 +332,10 @@ namespace AttendanceRegistration.Controllers
         {
             for (var day = from.Date; day.Date <= thru.Date; day = day.AddDays(1))
                 yield return day;
+        }
+        private static bool Between(DateTime input, DateTime date1, DateTime date2)
+        {
+            return (input >= date1 && input <= date2);
         }
     }
 }

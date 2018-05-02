@@ -3,9 +3,22 @@
     padding: 0;
 }
 
+.dates {
+    max-width: 5px;
+}
+
 body {
     padding-top: 50px;
     padding-bottom: 20px;
+}
+
+#data {
+    overflow: hidden;
+    height: 200px;
+}
+
+.texter {
+    text-align: start;
 }
 
 #pie {

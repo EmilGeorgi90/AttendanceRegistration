@@ -154,3 +154,6 @@ function weekIsEven(dateOfYeah) {
         throw new DOMException;
     }
 }
+$(function(){
+    $("#draggable").draggable({ axis: "x" });
+})
