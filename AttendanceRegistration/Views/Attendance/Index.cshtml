@@ -4,10 +4,78 @@
     ViewData["Title"] = "Index";
 }
 @* checking if it is a student there are logged in *@
-@if (User.Identity.Name.Split('@')[1] == "edu.campusvejle.dk")
+@if (User.Identity.Name.Split('@')[1] != "edu.campusvejle.dk")
 {
     <div hidden="hidden" id="json">
         @ViewData["JSON"]
+    </div>
+    <div hidden="hidden" id="JSONSemester">
+        @ViewData["JSONSemester"]
+    </div>
+    <div hidden="hidden" id="JSONWeek">
+        @ViewData["JSONWeek"]
+    </div>
+    <div hidden="hidden" id="JSONSModul">
+        @ViewData["JSONSModul"]
+    </div>
+
+    <h2>Index</h2>
+
+    <div id="data" class="table-bordered col-12 m-1 p-1 d-flex">
+        <div class="col-12 m-0 p-0 d-flex flex-column" id="draggable">
+            <div class="m-1 p-0">
+                <div class="col-12 d-flex p-0">
+                    <div class="col-1 p-0 m-0">
+                        <p class="p-0">
+                            <strong>
+                                @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
+                            </strong>
+                        </p>
+                    </div>
+                    <div class="col-11 ml-5 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
+                        <div class="dates m-0 p-0 pr-1 justify-content-end d-flex" style="max-width: 20px;min-height:50px">
+                            <div class="rotater m-0 p-0 flex-nowrap">
+                                <div class="align-bottom pr-1 pt-1" data-bind="text: dates"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 p-0 m-0 mt-2 d-flex flex-row" data-bind="foreach: persons">
+                <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
+                <div class="p-0 col-11 d-flex justify-content-start" data-bind="foreach: attendances">
+                    <div class="p-0 m-0 justify-content-start hours" style="min-width: 20px">
+                        <div type="text" class=" p-0 texter justify-content-start" name="hours" data-bind="text: hours"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row col-12">
+        <div id="chart-demo" class="col-6">
+            <div id="pieWeek" data-bind="dxPieChart: chartOptions"></div>
+        </div>
+        <div id="chart-Modul" class="col-6">
+            <div id="pieModul" data-bind="dxPieChart: chartOptions"></div>
+        </div>
+        <div id="chart-Semester" class="col-12">
+            <div id="pieSemester" data-bind="dxPieChart: chartOptions"></div>
+        </div>
+    </div>
+}
+else
+{
+    <div hidden="hidden" id="json">
+        @ViewData["JSON"]
+    </div>
+    <div hidden="hidden" id="JSONSemester">
+        @ViewData["JSONSemester"]
+    </div>
+    <div hidden="hidden" id="JSONWeek">
+        @ViewData["JSONWeek"]
+    </div>
+    <div hidden="hidden" id="JSONSModul">
+        @ViewData["JSONSModul"]
     </div>
     <h2>Index</h2>
     <script>
@@ -24,8 +92,8 @@
                             </strong>
                         </p>
                     </div>
-                    <div class="col-11 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
-                        <div class="dates">
+                    <div class="col-11 ml-5 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
+                        <div class="dates m-0 p-0 pr-1 justify-content-end d-flex" style="max-width: 20px;min-height:30px">
                             <div class="rotater m-0 p-0 flex-nowrap">
                                 <div data-bind="text: dates"></div>
                             </div>
@@ -36,52 +104,8 @@
             <div class="col-12 p-0 m-0 mt-2 d-flex flex-row" data-bind="foreach: persons">
                 <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
                 <div class="p-0 col-11 d-flex justify-content-start" data-bind="foreach: attendances">
-                    <div class="p-0 m-1 justify-content-start hours">
-                        <div type="text" class=" p-0 texter justify-content-start" name="hours" data-bind="text: hours"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="dx-viewport demo-container">
-        <div id="chart-demo">
-            <div id="pie" data-bind="dxPieChart: chartOptions"></div>
-        </div>
-    </div>
-    <script src="~/js/site.js"></script>
-}
-else
-{
-    <div hidden="hidden" id="json">
-        @ViewData["JSON"]
-    </div>
-    <h2>Index</h2>
-    <script>
-        var data = "";
-    </script>
-    <div id="data" class="table-bordered col-12 m-1 p-1 d-flex">
-        <div class="col-12 m-0 p-0 d-flex flex-column" id="draggable">
-            <div class="m-1 p-0">
-                <div class="col-12 d-flex p-0">
-                    <div class="col-1 p-0 m-0">
-                        <p class="p-0">
-                            <strong>
-                                @Html.DisplayNameFor(model => model.FirstOrDefault().Fullname)
-                            </strong>
-                        </p>
-                    </div>
-                    <div class="col-11 p-0 positionRelative row flex-nowrap" data-bind="foreach: persons[0].attendances">
-                        <div class="rotater m-1 p-0 flex-nowrap">
-                            <div data-bind="text: dates"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 p-0 m-0 mt-2 d-flex flex-row" data-bind="foreach: persons">
-                <div class="col-1 p-0 pl-1 fullname" data-bind="text: fullname"></div>
-                <div class="p-0 col-11 d-flex justify-content-start" data-bind="foreach: attendances">
-                    <div class="p-0 m-1 justify-content-start hours">
-                        <input type="text" class="col-12 p-0" id="hoursEdit" name="hours" data-bind="value: hours" />
+                    <div class="p-0 m-0 justify-content-start hours" style="max-width: 20px">
+                        <input type="text" class="col-12 p-0" id="hoursEdit" name="hours" data-bind="value: hours, attr:  { 'data-prop': attendanceId }" style="max-width: 20px" />
                     </div>
                 </div>
             </div>
@@ -96,10 +120,17 @@ else
             <li class="page-item"><a asp-action="index" asp-route-PageIndex="@(Model.PageIndex + 1)" asp-route-SearchString="@ViewData["currentSearch"]" class="page-link @nextDisabled">next</a></li>
         </ul>
     </nav>
-    <div class="dx-viewport demo-container">
-        <div id="chart-demo">
-            <div id="pie" data-bind="dxPieChart: chartOptions"></div>
+    <div class="row col-12">
+        <div id="chart-demo" class="col-6">
+            <div id="pieWeek" data-bind="dxPieChart: chartOptions"></div>
+        </div>
+        <div id="chart-Modul" class="col-6">
+            <div id="pieModul" data-bind="dxPieChart: chartOptions"></div>
+        </div>
+        <div id="chart-Semester" class="col-12">
+            <div id="pieSemester" data-bind="dxPieChart: chartOptions"></div>
         </div>
     </div>
+    <script src="~/js/site.js"></script>
+
 }
-<script src="~/js/site.js"></script>

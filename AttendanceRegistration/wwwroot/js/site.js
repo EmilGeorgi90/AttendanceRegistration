@@ -1,7 +1,10 @@
 ﻿DevExpress.viz.currentTheme("generic.light");
 var options = {
-    month: "numeric", day: "numeric", year: "numeric"
+    month: "numeric",
+    day: "numeric",
+    year: "numeric"
 };
+
 function Attendance(attendanceId, hours, dates, datesId, user, userId) {
     var self = this;
     self.attendanceId = attendanceId;
@@ -32,7 +35,10 @@ function PersonViewModel(person) {
 }
 //getting json from browser/controller
 var json = document.getElementById("json").innerHTML;
+
 var mydata = JSON.parse(json);
+console.log(mydata)
+
 $(function () {
     //bind the person data
     ko.applyBindings(new PersonViewModel(mydata), document.getElementById("data"));
@@ -41,6 +47,12 @@ $(function () {
 $(document).on("click", ".fullname", function () {
     ko.cleanNode(document.getElementById("chart-demo"));
     var value = 0;
+    var jsonSemesterHT = [JSON.parse(document.getElementById("JSONSemester").innerHTML)];
+    var jsonWeekHT = [JSON.parse(document.getElementById("JSONWeek").innerHTML)];
+    var jsonModulHT = [JSON.parse(document.getElementById("JSONSModul").innerHTML)];
+    console.log(jsonWeekHT[0].length)
+    console.log(jsonModulHT[0].length)
+    console.log(jsonSemesterHT[0].length)
     //getting all hours
     var array = $(this).nextUntil(".fullname").children(".hours");
     //getting username
@@ -51,11 +63,9 @@ $(document).on("click", ".fullname", function () {
     $(some).each(function (index, element) {
         if (index === 0) {
             array3.push(element);
-        }
-        else if (index === 1) {
+        } else if (index === 1) {
             array3.unshift(element);
-        }
-        else if (index === 2) {
+        } else if (index === 2) {
             array3.push(element);
         }
     });
@@ -67,38 +77,145 @@ $(document).on("click", ".fullname", function () {
     }
     //pluses value 
     array.each(function (index) {
+        if (index > jsonWeekHT[0].length) {
+            return;
+        }
         if ($(this).children().prop("tagName") === "DIV") {
             value += parseInt($(this).children()[0].innerText);
         } else {
             value += parseInt($(this).children()[0].value);
         }
     });
-    var json = [{
+    var jsonWeek = [{
         name: $(this)[0].innerText,
         hours: value
     }, {
         name: "hours of week",
         hours: weekIsEvenOrOdd
     }];
+    value = 0;
+    if (weekIsEven(array3.join('/'))) {
+        weekIsEvenOrOdd = 7 * jsonModulHT[0].length;
+    } else {
+        weekIsEvenOrOdd = 7 * jsonModulHT[0].length;
+    }
+    array.each(function (index) {
+        if (index > jsonModulHT[0].length) {
+            return;
+        }
+        if ($(this).children().prop("tagName") === "DIV") {
+            value += parseInt($(this).children()[0].innerText);
+        } else {
+            value += parseInt($(this).children()[0].value);
+        }
+    });
+    var jsonModul = [{
+        name: $(this)[0].innerText,
+        hours: value
+    }, {
+        name: "hours of modul",
+        hours: weekIsEvenOrOdd
+    }];
+    if (weekIsEven(array3.join('/'))) {
+        weekIsEvenOrOdd = 7 * jsonSemesterHT[0].length;
+    } else {
+        weekIsEvenOrOdd = 7 * jsonSemesterHT[0].length;
+    }
+    value = 0;
 
+    array.each(function (index) {
+        if (index > jsonSemesterHT[0].length) {
+            return;
+        }
+        if ($(this).children().prop("tagName") === "DIV") {
+            value += parseInt($(this).children()[0].innerText);
+        } else {
+            value += parseInt($(this).children()[0].value);
+        }
+    });
+    var jsonSemester = [{
+        name: $(this)[0].innerText,
+        hours: value
+    }, {
+        name: "hours of semester",
+        hours: weekIsEvenOrOdd
+    }];
 
-    viewModel = {
+    viewModelWeek = {
         chartOptions: {
             palette: "bright",
-            dataSource: json,
-            series: [
-                {
-                    argumentField: "name",
-                    valueField: "hours",
-                    label: {
-                        visible: true,
-                        customizeText: function (arg) {
-                            return arg.argumentText + " ( " + arg.percentText + ")";
-                        }
+            dataSource: jsonWeek,
+            series: [{
+                argumentField: "name",
+                valueField: "hours",
+                label: {
+                    visible: true,
+                    customizeText: function (arg) {
+                        return arg.argumentText + " ( " + arg.percentText + ")";
                     }
                 }
-            ],
-            title: "frevær",
+            }],
+            title: "frevær på ugen",
+            "export": {
+                enabled: true
+            },
+            onPointClick: function (e) {
+                var point = e.target;
+
+                toggleVisibility(point);
+            },
+            onLegendClick: function (e) {
+                var arg = e.target;
+
+                toggleVisibility(e.component.getAllSeries()[0].getPointsByArg(arg)[0]);
+            }
+        }
+    };
+    viewModelModul = {
+        chartOptions: {
+            palette: "bright",
+            dataSource: jsonModul,
+            series: [{
+                argumentField: "name",
+                valueField: "hours",
+                label: {
+                    visible: true,
+                    customizeText: function (arg) {
+                        return arg.argumentText + " ( " + arg.percentText + ")";
+                    }
+                }
+            }],
+            title: "frevær på modulet",
+            "export": {
+                enabled: true
+            },
+            onPointClick: function (e) {
+                var point = e.target;
+
+                toggleVisibility(point);
+            },
+            onLegendClick: function (e) {
+                var arg = e.target;
+
+                toggleVisibility(e.component.getAllSeries()[0].getPointsByArg(arg)[0]);
+            }
+        }
+    };
+    viewModelSemester = {
+        chartOptions: {
+            palette: "bright",
+            dataSource: jsonSemester,
+            series: [{
+                argumentField: "name",
+                valueField: "hours",
+                label: {
+                    visible: true,
+                    customizeText: function (arg) {
+                        return arg.argumentText + " ( " + arg.percentText + ")";
+                    }
+                }
+            }],
+            title: "frevær på semesteret",
             "export": {
                 enabled: true
             },
@@ -122,7 +239,10 @@ $(document).on("click", ".fullname", function () {
             item.show();
         }
     }
-    ko.applyBindings(viewModel, document.getElementById("chart-demo"));
+    ko.applyBindings(viewModelWeek, document.getElementById("chart-demo"));
+    ko.applyBindings(viewModelModul, document.getElementById("chart-Modul"));
+    ko.applyBindings(viewModelSemester, document.getElementById("chart-Semester"));
+
 });
 //edit function for the teacher to edit the students hours
 $(document).on("focusout", "#hoursEdit", function () {
@@ -131,7 +251,10 @@ $(document).on("focusout", "#hoursEdit", function () {
     var Attendanceid = JSON.parse(json);
     for (var i = 0; i < Attendanceid.length; i++) {
         if (Attendanceid[i].Fullname === $(this).parent().parent().prev(".fullname")[0].innerText) {
-            var dataToServer = { hours: parseInt($(this).val()), attendanceId: Attendanceid[i].Attendances[0].AttendanceId };
+            var dataToServer = {
+                hours: parseInt($(this).val()),
+                attendanceId: $(this).data("prop")
+            };
             $.post("Attendance/Edit", dataToServer);
         }
     }
@@ -154,6 +277,8 @@ function weekIsEven(dateOfYeah) {
         throw new DOMException;
     }
 }
-$(function(){
-    $("#draggable").draggable({ axis: "x" });
+$(function () {
+    $("#draggable").draggable({
+        axis: "x"
+    });
 })

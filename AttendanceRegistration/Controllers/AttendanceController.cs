@@ -91,7 +91,7 @@ namespace AttendanceRegistration.Controllers
                         else
                         {
                             Persons person = persons.Single(c => c.Fullname == user.Fullname);
-                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname && Between(DateTime.Now, a.Models.ModelStartDate, a.Models.ModelEndDate));
+                            person.Attendances = attendances.FindAll(a => a.User.Fullname == person.Fullname && Between(DateTime.Now, a.Semester.SemesterStartDate, a.Semester.SemesterEndDate));
                         }
                     }
                 }
@@ -111,6 +111,9 @@ namespace AttendanceRegistration.Controllers
             }
             //Serialize to json for the javascript
             ViewData["JSON"] = JsonConvert.SerializeObject(persons);
+            ViewData["JSONWeek"] = JsonConvert.SerializeObject(persons[0].Attendances.Where(a => a.Dates.ShcoolData.DayOfWeek == DayOfWeek.Monday && a.Dates.ShcoolData <= DateTime.Now).TakeLast(5));
+            ViewData["JSONSModul"] = JsonConvert.SerializeObject(persons[0].Attendances.Where(a => Between(DateTime.Now, a.Models.ModelStartDate, a.Models.ModelEndDate)));
+            ViewData["JSONSemester"] = JsonConvert.SerializeObject(persons[0].Attendances.Where(a => Between(DateTime.Now,a.Semester.SemesterStartDate,a.Semester.SemesterEndDate)));
             //adding it to the pagination
             return View(PaginatedList<Persons>.CreateAsync(persons, pageIndex ?? 1, 20));
         }
